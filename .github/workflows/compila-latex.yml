@@ -1,15 +1,10 @@
-# Wilson de Brito Ferreira - 09NOV2026
-# Github Actions para 'compilar' o fonte LaTeX e gerar pdf do artigo.
-
 name: Compilar LaTeX e Publicar no GitHub Pages
 
-# Gatilho - push
 on:
   push:
     branches:
       - main
 
-# Permissões necessárias para compilar e publicar no GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -29,16 +24,18 @@ jobs:
       - name: Compilar Documento LaTeX
         uses: xu-cheng/latex-action@v2
         with:
+          # Define a pasta onde estão os arquivos LaTeX e o arquivo principal
+          working_directory: paper
           root_file: sbc-template.tex
           args: "-pdf -bibtex -f"
 
-# Cria página html para inserir o artigo pdf.
-#
       - name: Preparar pasta para o GitHub Pages
         run: |
           mkdir -p public
-          cp sbc-template.pdf public/artigo-isva.pdf
-          # Cria um index.html com iframe para visualizar o PDF diretamente no navegador
+          # O PDF compilado é gerado dentro da pasta 'paper/'
+          cp paper/sbc-template.pdf public/artigo-isva.pdf
+
+          # Cria o index.html com o visualizador embutido
           cat << 'EOF' > public/index.html
           <!DOCTYPE html>
           <html lang="pt-BR">
