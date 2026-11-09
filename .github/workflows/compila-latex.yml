@@ -1,0 +1,77 @@
+# Wilson de Brito Ferreira - 09NOV2026
+# Github Actions para 'compilar' o fonte LaTeX e gerar pdf do artigo.
+
+name: Compilar LaTeX e Publicar no GitHub Pages
+
+# Gatilho - push
+on:
+  push:
+    branches:
+      - main
+
+# Permissões necessárias para compilar e publicar no GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-latex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Compilar Documento LaTeX
+        uses: xu-cheng/latex-action@v2
+        with:
+          root_file: sbc-template.tex
+          args: "-pdf -bibtex -f"
+
+# Cria página html para inserir o artigo pdf.
+#
+      - name: Preparar pasta para o GitHub Pages
+        run: |
+          mkdir -p public
+          cp sbc-template.pdf public/artigo-isva.pdf
+          # Cria um index.html com iframe para visualizar o PDF diretamente no navegador
+          cat << 'EOF' > public/index.html
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Artigo ISVA - Visualizador PDF</title>
+            <style>
+              body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+              iframe { width: 100%; height: 100%; border: none; }
+            </style>
+          </head>
+          <body>
+            <iframe src="artigo-isva.pdf"></iframe>
+          </body>
+          </html>
+          EOF
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload dos Artefatos
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+
+  deploy-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-latex
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
